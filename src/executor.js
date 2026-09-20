@@ -30,6 +30,6 @@ export class Executor {
   }
 
   executeSelect(ast) {
-    return this.database.select(ast.tableName, ast.columns);
+    return this.database.select(ast.tableName, ast.columns, ast.where);
   }
 }

@@ -76,3 +76,12 @@ executeSQL(`
 executeSQL(`
     SELECT name, age FROM users;
 `);
+executeSQL(`
+    SELECT * FROM users
+    WHERE age > 20;
+`);
+
+executeSQL(`
+    SELECT * FROM users
+    WHERE age > 20 AND name = 'Ketan';
+`);

@@ -119,11 +119,39 @@ export class Parser {
     this.expect("KEYWORD", "FROM");
     const tableName = this.expect("IDENTIFIER").value;
 
+    let where = null;
+    if (this.currToken().value === "WHERE") {
+      where = this.parseWhere();
+    }
+
     if (this.currToken().value === ";") {
       this.moveAhead();
     }
 
-    return { type: "SELECT", tableName, columns };
+    return { type: "SELECT", tableName, columns, where };
+  }
+
+  parseWhere() {
+    this.expect("KEYWORD", "WHERE");
+
+    const conditions = [];
+    conditions.push(this.parseCondition());
+
+    while (this.currToken().value === "AND" || this.currToken().value == "OR") {
+      const logicalOp = this.moveAhead().value;
+      const condition = this.parseCondition();
+      conditions.push({operator:logicalOp, condition})
+    }
+
+    return conditions;
+  }
+
+  parseCondition() {
+    const column = this.expect("IDENTIFIER").value;
+    const operator = this.expect("OPERATOR").value;
+    const value = this.parseValue();
+
+    return { column, operator, value };
   }
 
   parseValue() {

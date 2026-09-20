@@ -53,15 +53,17 @@ export class Table {
     return this.rows;
   }
 
-  select(columns) {
+  select(columns, condition = null) {
+    let rows = this.rows;
+    if (condition) {
+      rows = this.filterRows(condition);
+    }
     if (columns.includes("*")) {
-      return this.rows;
+      return rows;
     }
 
     const colIndexes = columns.map((colName) => {
-      const index = this.schema.findIndex(
-        (col) => col.name === colName,
-      );
+      const index = this.schema.findIndex((col) => col.name === colName);
 
       if (index === -1) {
         throw new Error(`Column '${colName}' does not exist`);
@@ -70,8 +72,65 @@ export class Table {
       return index;
     });
 
-    return this.rows.map((row) => {
+    return rows.map((row) => {
       return colIndexes.map((idx) => row[idx]);
     });
   }
+
+  filterRows(conditions) {
+    return this.rows.filter((row) => {
+        let res = this.evaluateCondition(row,conditions[0]);
+        for(let i=1;i<conditions.length;i++){
+            const logicalOp = conditions[i].operator;
+            const currRes = this.evaluateCondition(row,conditions[i].condition);
+
+            if(logicalOp === "AND"){
+                res = res && currRes;
+            }
+            if(logicalOp === "OR"){
+                res = res || currRes;
+            }
+        }
+        return res;
+    })
+  }
+
+  evaluateCondition(row, condition) {
+    const columnIndex = this.schema.findIndex(
+        (column) => column.name === condition.column
+    );
+
+    if (columnIndex === -1) {
+        throw new Error(
+            `Column '${condition.column}' does not exist`
+        );
+    }
+
+    const rowValue = row[columnIndex];
+
+    switch (condition.operator) {
+        case "=":
+            return rowValue === condition.value;
+
+        case "!=":
+            return rowValue !== condition.value;
+
+        case ">":
+            return rowValue > condition.value;
+
+        case "<":
+            return rowValue < condition.value;
+
+        case ">=":
+            return rowValue >= condition.value;
+
+        case "<=":
+            return rowValue <= condition.value;
+
+        default:
+            throw new Error(
+                `Unsupported operator: ${condition.operator}`
+            );
+    }
+}
 }
