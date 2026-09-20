@@ -36,4 +36,9 @@ export class Database {
     const table = this.getTable(tableName);
     return table.selectAll();
   }
+  
+  select(tableName, columns) {
+    const table = this.getTable(tableName);
+    return table.select(columns);
+  }
 }

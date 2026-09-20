@@ -5,7 +5,7 @@ export class Parser {
   }
 
   parse() {
-    const token = this.current();
+    const token = this.currToken();
 
     switch (token.value) {
       case "CREATE":
@@ -20,18 +20,18 @@ export class Parser {
     }
   }
 
-  current() {
+  currToken() {
     return this.tokens[this.index];
   }
 
-  advance() {
-    const token = this.current();
+  moveAhead() {
+    const token = this.currToken();
     this.index++;
     return token;
   }
 
   expect(type, value = null) {
-    const token = this.current();
+    const token = this.currToken();
 
     if (token.type !== type) {
       throw new Error(`Expected ${type}, got ${token.type}`);
@@ -53,19 +53,19 @@ export class Parser {
 
     const columns = [];
 
-    while (this.current().value !== ")") {
+    while (this.currToken().value !== ")") {
       const name = this.expect("IDENTIFIER").value;
       const type = this.expect("KEYWORD").value;
 
       columns.push({ name, type });
-      if (this.current().value === ",") {
-        this.advance();
+      if (this.currToken().value === ",") {
+        this.moveAhead();
       }
     }
 
     this.expect("SYMBOL", ")");
-    if (this.current().value === ";") {
-      this.advance();
+    if (this.currToken().value === ";") {
+      this.moveAhead();
     }
 
     return { type: "CREATE_TABLE", tableName, columns };
@@ -82,18 +82,18 @@ export class Parser {
 
     const values = [];
 
-    while (this.current().value !== ")") {
+    while (this.currToken().value !== ")") {
       values.push(this.parseValue());
 
-      if (this.current().value === ",") {
-        this.advance();
+      if (this.currToken().value === ",") {
+        this.moveAhead();
       }
     }
 
     this.expect("SYMBOL", ")");
 
-    if (this.current().value === ";") {
-      this.advance();
+    if (this.currToken().value === ";") {
+      this.moveAhead();
     }
 
     return { type: "INSERT", tableName, values };
@@ -103,44 +103,44 @@ export class Parser {
     this.expect("KEYWORD", "SELECT");
 
     const columns = [];
-    if (this.current().value === "*") {
+    if (this.currToken().value === "*") {
       columns.push("*");
-      this.advance();
+      this.moveAhead();
     } else {
       while (true) {
-        columns.push(this.expect("INDENTIFIER").value);
-        if (this.current().value !== ",") {
+        columns.push(this.expect("IDENTIFIER").value);
+        if (this.currToken().value !== ",") {
           break;
         }
-        this.advance();
+        this.moveAhead();
       }
     }
 
     this.expect("KEYWORD", "FROM");
     const tableName = this.expect("IDENTIFIER").value;
 
-    if (this.current().value === ";") {
-      this.advance();
+    if (this.currToken().value === ";") {
+      this.moveAhead();
     }
 
     return { type: "SELECT", tableName, columns };
   }
 
   parseValue() {
-    const token = this.current();
+    const token = this.currToken();
 
     if (token.type === "NUMBER" || token.type === "STRING") {
-      this.advance();
+      this.moveAhead();
       return token.value;
     }
 
     if (token.value === "TRUE") {
-      this.advance();
+      this.moveAhead();
       return true;
     }
 
     if (token.value === "FALSE") {
-      this.advance();
+      this.moveAhead();
       return false;
     }
 

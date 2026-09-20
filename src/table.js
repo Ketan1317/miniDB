@@ -52,4 +52,26 @@ export class Table {
   selectAll() {
     return this.rows;
   }
+
+  select(columns) {
+    if (columns.includes("*")) {
+      return this.rows;
+    }
+
+    const colIndexes = columns.map((colName) => {
+      const index = this.schema.findIndex(
+        (col) => col.name === colName,
+      );
+
+      if (index === -1) {
+        throw new Error(`Column '${colName}' does not exist`);
+      }
+
+      return index;
+    });
+
+    return this.rows.map((row) => {
+      return colIndexes.map((idx) => row[idx]);
+    });
+  }
 }

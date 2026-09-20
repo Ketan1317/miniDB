@@ -51,7 +51,7 @@ export class Lexer {
           value: "*",
         });
 
-        this.position++;
+        this.index++;
         continue;
       }
 
@@ -97,6 +97,8 @@ export class Lexer {
       "FLOAT",
       "TEXT",
       "BOOLEAN",
+      "TRUE",
+      "FALSE",
       "AND",
       "OR",
       "ORDER",
