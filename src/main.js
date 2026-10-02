@@ -2,86 +2,70 @@ import { Database } from "./database.js";
 import { Lexer } from "./lexer.js";
 import { Parser } from "./parser.js";
 import { Executor } from "./executor.js";
+import { UI } from "./ui.js";
+import { Visualizer } from "./visualizer.js";
+import { Storage } from "./storage.js";
 
-const db = new Database();
-const executor = new Executor(db);
+const database = new Database();
+const executor = new Executor(database);
+const ui = new UI();
+const visualizer = new Visualizer();
+const storage = new Storage();
 
-function executeSQL(sql) {
-    console.log("\nSQL:");
-    console.log(sql.trim());
+async function initialize() {
+  try {
+    await storage.open();
 
-    const lexer = new Lexer(sql);
+    const savedData = await storage.load();
+
+    if (savedData) {
+      database.load(savedData);
+    }
+
+    ui.renderTables(database);
+  } catch (error) {
+    console.error("MiniDB startup error:", error);
+    ui.showError("Failed to load database: " + error.message);
+  }
+}
+
+ui.onRun(async () => {
+  const query = ui.getQuery();
+
+  if (!query) {
+    ui.showMessage("Enter a SQL query.");
+    return;
+  }
+
+  const startTime = performance.now();
+
+  try {
+    const lexer = new Lexer(query);
     const tokens = lexer.tokenize();
-
-    console.log("TOKENS:");
-    console.log(tokens);
-
     const parser = new Parser(tokens);
     const ast = parser.parse();
 
-    console.log("AST:");
-    console.log(ast);
-
     const result = executor.execute(ast);
 
-    console.log("RESULT:");
-    console.log(result);
+    await storage.save(database.serialize());
 
-    return result;
-}
+    const endTime = performance.now();
+    const executionTime = endTime - startTime;
 
+    if (result && result.rows && Array.isArray(result.rows)) {
+      ui.showResults(result);
+      ui.updateStats(executionTime, result.rows.length);
+    } else {
+      ui.showMessage(result?.message ?? "Query executed successfully.");
+      ui.updateStats(executionTime, 0);
+    }
 
-// ========================================
-// 1. CREATE TABLE
-// ========================================
+    ui.renderTables(database);
+    visualizer.addQuery(executionTime);
+  } catch (error) {
+    console.error("MiniDB Error:", error);
+    ui.showError(error.message);
+  }
+});
 
-executeSQL(`
-    CREATE TABLE users (
-        id INT,
-        name TEXT,
-        age INT
-    );
-`);
-
-
-// ========================================
-// 2. INSERT
-// ========================================
-
-executeSQL(`
-    INSERT INTO users VALUES (1, 'Ketan', 21);
-`);
-
-executeSQL(`
-    INSERT INTO users VALUES (2, 'Rahul', 24);
-`);
-
-executeSQL(`
-    INSERT INTO users VALUES (3, 'Aman', 19);
-`);
-
-
-// ========================================
-// 3. SELECT *
-// ========================================
-
-executeSQL(`
-    SELECT * FROM users;
-`);
-
-executeSQL(`
-    SELECT name FROM users;
-`);
-
-executeSQL(`
-    SELECT name, age FROM users;
-`);
-executeSQL(`
-    SELECT * FROM users
-    WHERE age > 20;
-`);
-
-executeSQL(`
-    SELECT * FROM users
-    WHERE age > 20 AND name = 'Ketan';
-`);
+initialize();

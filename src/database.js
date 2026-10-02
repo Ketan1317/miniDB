@@ -41,4 +41,28 @@ export class Database {
     const table = this.getTable(tableName);
     return table.select(columns, condition);
   }
+
+  serialize() {
+    return {
+      tables: Array.from(this.tables.values()).map((table) => ({
+        name: table.name,
+        schema: table.schema,
+        rows: table.rows,
+      })),
+    };
+  }
+
+  load(data) {
+    this.tables.clear();
+
+    if (!data || !data.tables) {
+      return;
+    }
+
+    for (let tableData of data.tables) {
+      const table = new Table(tableData.name, tableData.schema);
+      table.rows = tableData.rows;
+      this.tables.set(table.name, table);
+    }
+  }
 }

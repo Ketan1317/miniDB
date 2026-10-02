@@ -6,11 +6,196 @@
 
     <title>MiniDB</title>
 
-    <link rel="stylesheet" href="./src/style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   </head>
 
-  <body>
-    <h1>MiniDB</h1>
+  <body class="bg-zinc-950 text-zinc-100">
+    <div class="h-screen flex flex-col overflow-hidden">
+      <!-- HEADER -->
+
+      <header
+        class="h-14 shrink-0 border-b border-zinc-800 flex items-center px-5"
+      >
+        <div>
+          <h1 class="text-lg font-semibold tracking-tight">MiniDB</h1>
+
+          <p class="text-[11px] text-zinc-500">
+            Browser-based relational database engine
+          </p>
+        </div>
+
+        <div class="ml-auto flex items-center gap-2 text-xs text-zinc-500">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+
+          <span> Engine Ready </span>
+        </div>
+      </header>
+
+      <!-- MAIN -->
+
+      <main class="flex flex-1 min-h-0">
+        <!-- DATABASE EXPLORER -->
+        <aside class="w-64 shrink-0 border-r border-zinc-800 bg-zinc-950">
+          <div class="px-4 py-3 border-b border-zinc-800">
+            <div class="flex justify-between items-center">
+              <span
+                class="text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              >
+                Database
+              </span>
+
+              <span class="text-[10px] text-zinc-600"> IN-MEMORY </span>
+            </div>
+          </div>
+
+          <div class="p-3">
+            <div class="flex items-center gap-2 px-2 py-2 text-sm">
+              <span class="text-zinc-500"> ▾ </span>
+
+              <span> MiniDB </span>
+            </div>
+
+            <div id="table-list" class="mt-1 space-y-1">
+              <!-- Tables rendered by UI -->
+            </div>
+          </div>
+        </aside>
+
+        <!-- WORKSPACE -->
+
+        <section class="flex-1 min-w-0 flex flex-col">
+          <!-- SQL EDITOR -->
+
+          <div
+            class="h-[320px] shrink-0 border-b border-zinc-800 flex flex-col"
+          >
+            <!-- Editor Header -->
+
+            <div
+              class="h-11 shrink-0 border-b border-zinc-800 px-4 flex items-center"
+            >
+              <span
+                class="text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              >
+                SQL Editor
+              </span>
+
+              <button
+                id="run-query"
+                class="ml-auto px-4 py-1.5 rounded bg-zinc-100 text-zinc-950 text-xs font-medium hover:bg-white transition"
+              >
+                Run Query
+              </button>
+            </div>
+
+            <!-- Editor -->
+
+            <textarea
+              id="sql-editor"
+              spellcheck="false"
+              class="flex-1 resize-none bg-zinc-950 p-5 outline-none border-none font-mono text-sm leading-6 text-zinc-300 placeholder:text-zinc-700"
+              placeholder="Write your SQL query here..."
+            >
+CREATE TABLE users (
+    id INT,
+    name TEXT,
+    age INT
+);</textarea
+            >
+          </div>
+
+          <!-- LOWER WORKSPACE -->
+
+          <div class="flex-1 min-h-0 flex flex-col">
+            <!-- Tabs -->
+
+            <div
+              class="h-11 shrink-0 border-b border-zinc-800 px-4 flex items-center"
+            >
+              <div class="flex items-center gap-6">
+                <button
+                  id="results-tab"
+                  class="text-xs font-medium text-zinc-200"
+                >
+                  Results
+                </button>
+
+                <button
+                  id="performance-tab"
+                  class="text-xs font-medium text-zinc-600 hover:text-zinc-300"
+                >
+                  Performance
+                </button>
+              </div>
+            </div>
+
+            <!-- RESULTS PANEL -->
+
+            <div id="results-panel" class="flex-1 min-h-0 overflow-auto p-5">
+              <div class="text-sm text-zinc-600">
+                Run a query to see results.
+              </div>
+            </div>
+
+            <!-- PERFORMANCE PANEL -->
+
+            <div
+              id="performance-panel"
+              class="hidden flex-1 min-h-0 overflow-auto p-5"
+            >
+              <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <!-- Execution Time -->
+
+                <div class="border border-zinc-800 rounded-lg bg-zinc-950 p-4">
+                  <div class="mb-4">
+                    <h3 class="text-sm font-medium text-zinc-300">
+                      Current Execution
+                    </h3>
+
+                    <p class="text-xs text-zinc-600 mt-1">
+                      Execution time for the latest query
+                    </p>
+                  </div>
+
+                  <div id="execution-chart" class="w-full h-[250px]"></div>
+                </div>
+
+                <!-- Query History -->
+
+                <div class="border border-zinc-800 rounded-lg bg-zinc-950 p-4">
+                  <div class="mb-4">
+                    <h3 class="text-sm font-medium text-zinc-300">
+                      Query History
+                    </h3>
+
+                    <p class="text-xs text-zinc-600 mt-1">
+                      Execution time across recent queries
+                    </p>
+                  </div>
+
+                  <div id="history-chart" class="w-full h-[250px]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- STATUS BAR -->
+
+      <footer
+        class="h-9 shrink-0 border-t border-zinc-800 px-4 flex items-center gap-6 text-[11px] text-zinc-500"
+      >
+        <span id="execution-time"> Execution: — </span>
+
+        <span id="rows-returned"> Rows: — </span>
+
+        <span id="scan-type"> Scan: Sequential </span>
+      </footer>
+    </div>
+
+    <!-- Application -->
 
     <script type="module" src="./src/main.js"></script>
   </body>

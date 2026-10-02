@@ -20,13 +20,21 @@ export class Executor {
   }
 
   executeCreateTable(ast) {
-    return this.database.createTable(ast.tableName, ast.columns);
+    this.database.createTable(ast.tableName, ast.columns);
+
+    return {
+      type: "MESSAGE",
+      message: `Table '${ast.tableName}' created successfully`,
+    };
   }
 
   executeInsert(ast) {
     this.database.insert(ast.tableName, ast.values);
 
-    return { message: "Row inserted successfully" };
+    return {
+      type: "MESSAGE",
+      message: "Row inserted successfully",
+    };
   }
 
   executeSelect(ast) {

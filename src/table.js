@@ -55,82 +55,93 @@ export class Table {
 
   select(columns, condition = null) {
     let rows = this.rows;
+
     if (condition) {
       rows = this.filterRows(condition);
     }
+
+    let selectedColumns;
+
     if (columns.includes("*")) {
-      return rows;
+      selectedColumns = this.schema;
+    } else {
+      selectedColumns = columns.map((columnName) => {
+        const column = this.schema.find((column) => column.name === columnName);
+
+        if (!column) {
+          throw new Error(`Column '${columnName}' does not exist`);
+        }
+
+        return column;
+      });
     }
 
-    const colIndexes = columns.map((colName) => {
-      const index = this.schema.findIndex((col) => col.name === colName);
+    const columnIndexes = selectedColumns.map((column) =>
+      this.schema.findIndex(
+        (schemaColumn) => schemaColumn.name === column.name,
+      ),
+    );
 
-      if (index === -1) {
-        throw new Error(`Column '${colName}' does not exist`);
-      }
+    const resultRows = rows.map((row) =>
+      columnIndexes.map((index) => row[index]),
+    );
 
-      return index;
-    });
-
-    return rows.map((row) => {
-      return colIndexes.map((idx) => row[idx]);
-    });
+    return {
+      columns: selectedColumns.map((column) => column.name),
+      rows: resultRows,
+    };
   }
 
   filterRows(conditions) {
     return this.rows.filter((row) => {
-        let res = this.evaluateCondition(row,conditions[0]);
-        for(let i=1;i<conditions.length;i++){
-            const logicalOp = conditions[i].operator;
-            const currRes = this.evaluateCondition(row,conditions[i].condition);
+      let res = this.evaluateCondition(row, conditions[0]);
+      for (let i = 1; i < conditions.length; i++) {
+        const logicalOp = conditions[i].operator;
+        const currRes = this.evaluateCondition(row, conditions[i].condition);
 
-            if(logicalOp === "AND"){
-                res = res && currRes;
-            }
-            if(logicalOp === "OR"){
-                res = res || currRes;
-            }
+        if (logicalOp === "AND") {
+          res = res && currRes;
         }
-        return res;
-    })
+        if (logicalOp === "OR") {
+          res = res || currRes;
+        }
+      }
+      return res;
+    });
   }
 
   evaluateCondition(row, condition) {
     const columnIndex = this.schema.findIndex(
-        (column) => column.name === condition.column
+      (column) => column.name === condition.column,
     );
 
     if (columnIndex === -1) {
-        throw new Error(
-            `Column '${condition.column}' does not exist`
-        );
+      throw new Error(`Column '${condition.column}' does not exist`);
     }
 
     const rowValue = row[columnIndex];
 
     switch (condition.operator) {
-        case "=":
-            return rowValue === condition.value;
+      case "=":
+        return rowValue === condition.value;
 
-        case "!=":
-            return rowValue !== condition.value;
+      case "!=":
+        return rowValue !== condition.value;
 
-        case ">":
-            return rowValue > condition.value;
+      case ">":
+        return rowValue > condition.value;
 
-        case "<":
-            return rowValue < condition.value;
+      case "<":
+        return rowValue < condition.value;
 
-        case ">=":
-            return rowValue >= condition.value;
+      case ">=":
+        return rowValue >= condition.value;
 
-        case "<=":
-            return rowValue <= condition.value;
+      case "<=":
+        return rowValue <= condition.value;
 
-        default:
-            throw new Error(
-                `Unsupported operator: ${condition.operator}`
-            );
+      default:
+        throw new Error(`Unsupported operator: ${condition.operator}`);
     }
-}
+  }
 }
