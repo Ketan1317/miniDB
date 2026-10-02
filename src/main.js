@@ -73,6 +73,8 @@ ui.onRun(async () => {
     console.error("MiniDB Error:", error);
     ui.showError(error.message);
   }
+
+  console.log(new Lexer("SELECT * FROM users ORDER BY age DESC;").tokenize());
 });
 
 initialize();

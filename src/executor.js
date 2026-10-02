@@ -42,7 +42,7 @@ export class Executor {
   }
 
   executeSelect(ast) {
-    return this.database.select(ast.tableName, ast.columns, ast.where);
+    return this.database.select(ast.tableName, ast.columns, ast.where, ast.orderBy, ast.limit);
   }
 
   executeUpdate(ast) {

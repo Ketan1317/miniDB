@@ -128,11 +128,21 @@ export class Parser {
       where = this.parseWhere();
     }
 
+    let orderBy = null;
+    if (this.currToken().value === "ORDER") {
+      orderBy = this.parseOrderBy();
+    }
+
+    let limit = null;
+    if (this.currToken().value === "LIMIT") {
+      limit = this.parseLimit();
+    }
+
     if (this.currToken().value === ";") {
       this.moveAhead();
     }
 
-    return { type: "SELECT", tableName, columns, where };
+    return { type: "SELECT", tableName, columns, where, orderBy, limit };
   }
 
   parseUpdate() {
@@ -202,7 +212,10 @@ export class Parser {
     const conditions = [];
     conditions.push(this.parseCondition());
 
-    while (this.currToken().value === "AND" || this.currToken().value == "OR") {
+    while (
+      this.currToken().value === "AND" ||
+      this.currToken().value === "OR"
+    ) {
       const logicalOp = this.moveAhead().value;
       const condition = this.parseCondition();
       conditions.push({ operator: logicalOp, condition });
@@ -238,5 +251,37 @@ export class Parser {
     }
 
     throw new Error(`Invalid value: ${token.value}`);
+  }
+
+  parseOrderBy() {
+    this.expect("KEYWORD", "ORDER");
+    this.expect("KEYWORD", "BY");
+
+    const column = this.expect("IDENTIFIER").value;
+    let direction = "ASC";
+
+    if (this.currToken().value === "ASC" || this.currToken().value === "DESC") {
+      direction = this.moveAhead().value;
+    }
+
+    return {
+      column,
+      direction,
+    };
+  }
+
+  parseLimit() {
+    this.expect("KEYWORD", "LIMIT");
+    const token = this.expect("NUMBER");
+
+    if (!Number.isInteger(token.value)) {
+      throw new Error("LIMIT must be an integer");
+    }
+
+    if (token.value < 0) {
+      throw new Error("LIMIT cannot be negative");
+    }
+
+    return token.value;
   }
 }

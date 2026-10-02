@@ -53,11 +53,19 @@ export class Table {
     return this.rows;
   }
 
-  select(columns, condition = null) {
+  select(columns, condition = null, orderBy = null, limit = null) {
     let rows = this.rows;
 
     if (condition) {
       rows = this.filterRows(condition);
+    }
+
+    if (orderBy) {
+      rows = this.sortRows(rows, orderBy);
+    }
+
+    if (limit !== null) {
+      rows = rows.slice(0, limit);
     }
 
     let selectedColumns;
@@ -81,10 +89,6 @@ export class Table {
         (schemaColumn) => schemaColumn.name === column.name,
       ),
     );
-
-    console.log("ROWS:", rows);
-    console.log("SCHEMA:", this.schema);
-    console.log("COLUMN INDEXES:", columnIndexes);
 
     const resultRows = rows.map((row) =>
       columnIndexes.map((index) => row[index]),
@@ -152,7 +156,7 @@ export class Table {
         }
 
         const col = this.schema[colIdx];
-        if (!this.isValidType(update.type, col.type)) {
+        if (!this.isValidType(update.value, col.type)) {
           throw new Error(
             `Invalid value for column '${col.name}'. Expected ${col.type}`,
           );
@@ -197,5 +201,41 @@ export class Table {
       }
     }
     return res;
+  }
+
+  sortRows(rows, orderBy) {
+    const colIdx = this.schema.findIndex(
+      (column) => column.name === orderBy.column,
+    );
+
+    if (colIdx === -1) {
+      throw new Error(`Column '${orderBy.column}' does not exist`);
+    }
+
+    const sortedRows = [...rows];
+
+    sortedRows.sort((a, b) => {
+      const valueA = a[colIdx];
+      const valueB = b[colIdx];
+
+      if (valueA === valueB) {
+        return 0;
+      }
+
+      if (valueA == null) {
+        return 1;
+      }
+
+      if (valueB == null) {
+        return -1;
+      }
+
+      if (valueA < valueB) {
+        return orderBy.direction === "ASC" ? -1 : 1;
+      }
+
+      return orderBy.direction === "ASC" ? 1 : -1;
+    });
+    return sortedRows;
   }
 }
