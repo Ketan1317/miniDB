@@ -82,6 +82,10 @@ export class Table {
       ),
     );
 
+    console.log("ROWS:", rows);
+    console.log("SCHEMA:", this.schema);
+    console.log("COLUMN INDEXES:", columnIndexes);
+
     const resultRows = rows.map((row) =>
       columnIndexes.map((index) => row[index]),
     );
@@ -93,33 +97,20 @@ export class Table {
   }
 
   filterRows(conditions) {
-    return this.rows.filter((row) => {
-      let res = this.evaluateCondition(row, conditions[0]);
-      for (let i = 1; i < conditions.length; i++) {
-        const logicalOp = conditions[i].operator;
-        const currRes = this.evaluateCondition(row, conditions[i].condition);
-
-        if (logicalOp === "AND") {
-          res = res && currRes;
-        }
-        if (logicalOp === "OR") {
-          res = res || currRes;
-        }
-      }
-      return res;
-    });
+    return this.rows.filter((row) => this.evaluateConditions(row, conditions));
   }
 
   evaluateCondition(row, condition) {
-    const columnIndex = this.schema.findIndex(
+    // returna a boolean
+    const colIdx = this.schema.findIndex(
       (column) => column.name === condition.column,
     );
 
-    if (columnIndex === -1) {
+    if (colIdx === -1) {
       throw new Error(`Column '${condition.column}' does not exist`);
     }
 
-    const rowValue = row[columnIndex];
+    const rowValue = row[colIdx];
 
     switch (condition.operator) {
       case "=":
@@ -143,5 +134,68 @@ export class Table {
       default:
         throw new Error(`Unsupported operator: ${condition.operator}`);
     }
+  }
+
+  update(updates, conditions = null) {
+    let updateCnt = 0;
+    for (let row of this.rows) {
+      if (conditions && !this.evaluateConditions(row, conditions)) {
+        continue;
+      }
+
+      for (let update of updates) {
+        const colIdx = this.schema.findIndex(
+          (col) => col.name === update.column,
+        );
+        if (colIdx == -1) {
+          throw new Error(`Column ${update.column} does not exist`);
+        }
+
+        const col = this.schema[colIdx];
+        if (!this.isValidType(update.type, col.type)) {
+          throw new Error(
+            `Invalid value for column '${col.name}'. Expected ${col.type}`,
+          );
+        }
+
+        row[colIdx] = update.value;
+      }
+      updateCnt++;
+    }
+    return updateCnt;
+  }
+
+  delete(conditions = null) {
+    if (!conditions) {
+      const cnt = this.rows.length;
+      this.rows = [];
+      return cnt;
+    }
+
+    const orgLength = this.rows.length;
+
+    this.rows = this.rows.filter(
+      (row) => !this.evaluateConditions(row, conditions),
+    );
+
+    return orgLength - this.rows.length;
+  }
+
+  evaluateConditions(row, conditions) {
+    let res = this.evaluateCondition(row, conditions[0]);
+
+    for (let i = 1; i < conditions.length; i++) {
+      const logicalOp = conditions[i].operator;
+      const currRes = this.evaluateCondition(row, conditions[i].condition);
+
+      if (logicalOp === "AND") {
+        res = res && currRes;
+      }
+
+      if (logicalOp === "OR") {
+        res = res || currRes;
+      }
+    }
+    return res;
   }
 }

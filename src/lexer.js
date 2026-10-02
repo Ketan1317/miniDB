@@ -106,6 +106,7 @@ export class Lexer {
       "ASC",
       "DESC",
       "LIMIT",
+      "SET"
     ];
 
     if (keywords.includes(value.toUpperCase())) {

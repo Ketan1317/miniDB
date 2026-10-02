@@ -13,6 +13,10 @@ export class Executor {
 
       case "SELECT":
         return this.executeSelect(ast);
+      case "UPDATE":
+        return this.executeUpdate(ast);
+      case "DELETE":
+        return this.executeDelete(ast);
 
       default:
         throw new Error(`Unsupported AST type: ${ast.type}`);
@@ -39,5 +43,23 @@ export class Executor {
 
   executeSelect(ast) {
     return this.database.select(ast.tableName, ast.columns, ast.where);
+  }
+
+  executeUpdate(ast) {
+    const updatedCount = this.database.update(ast.tableName, ast.updates, ast.where);
+
+    return {
+      type: "MESSAGE",
+      message: `${updatedCount} row(s) updated successfully`,
+    };
+  }
+
+  executeDelete(ast) {
+    const deletedCount = this.database.delete(ast.tableName, ast.where);
+
+    return {
+      type: "MESSAGE",
+      message: `${deletedCount} row(s) deleted successfully`,
+    };
   }
 }

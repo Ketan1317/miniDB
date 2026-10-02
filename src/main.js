@@ -47,7 +47,14 @@ ui.onRun(async () => {
 
     const result = executor.execute(ast);
 
-    await storage.save(database.serialize());
+    if (
+      ast.type === "CREATE_TABLE" ||
+      ast.type === "INSERT" ||
+      ast.type === "UPDATE" ||
+      ast.type === "DELETE"
+    ) {
+      await storage.save(database.serialize());
+    }
 
     const endTime = performance.now();
     const executionTime = endTime - startTime;

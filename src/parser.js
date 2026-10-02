@@ -14,6 +14,10 @@ export class Parser {
         return this.parseInsert();
       case "SELECT":
         return this.parseSelect();
+      case "UPDATE":
+        return this.parseUpdate();
+      case "DELETE":
+        return this.parseDelete();
 
       default:
         throw new Error(`Unexpected token: ${token.value}`);
@@ -131,6 +135,67 @@ export class Parser {
     return { type: "SELECT", tableName, columns, where };
   }
 
+  parseUpdate() {
+    this.expect("KEYWORD", "UPDATE");
+    const tableName = this.expect("IDENTIFIER").value;
+    this.expect("KEYWORD", "SET");
+
+    const updates = [];
+
+    while (true) {
+      const col = this.expect("IDENTIFIER").value;
+      this.expect("OPERATOR", "=");
+      const val = this.parseValue();
+
+      updates.push({ column: col, value: val });
+      if (this.currToken().value !== ",") {
+        break;
+      }
+
+      this.moveAhead();
+    }
+
+    let where = null;
+
+    if (this.currToken().value === "WHERE") {
+      where = this.parseWhere();
+    }
+
+    if (this.currToken().value === ";") {
+      this.moveAhead();
+    }
+
+    return {
+      type: "UPDATE",
+      tableName,
+      updates,
+      where,
+    };
+  }
+
+  parseDelete() {
+    this.expect("KEYWORD", "DELETE");
+    this.expect("KEYWORD", "FROM");
+
+    const tableName = this.expect("IDENTIFIER").value;
+
+    let where = null;
+
+    if (this.currToken().value === "WHERE") {
+      where = this.parseWhere();
+    }
+
+    if (this.currToken().value === ";") {
+      this.moveAhead();
+    }
+
+    return {
+      type: "DELETE",
+      tableName,
+      where,
+    };
+  }
+
   parseWhere() {
     this.expect("KEYWORD", "WHERE");
 
@@ -140,7 +205,7 @@ export class Parser {
     while (this.currToken().value === "AND" || this.currToken().value == "OR") {
       const logicalOp = this.moveAhead().value;
       const condition = this.parseCondition();
-      conditions.push({operator:logicalOp, condition})
+      conditions.push({ operator: logicalOp, condition });
     }
 
     return conditions;

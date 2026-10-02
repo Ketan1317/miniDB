@@ -42,6 +42,16 @@ export class Database {
     return table.select(columns, condition);
   }
 
+  update(tableName, updates, conditions = null){
+    const table = this.getTable(tableName)
+    return table.update(updates,conditions);
+  }
+
+  delete(tableName,conditions = null){
+    const table = this.getTable(tableName);
+    return table.delete(conditions);
+  }
+
   serialize() {
     return {
       tables: Array.from(this.tables.values()).map((table) => ({
