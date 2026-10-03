@@ -44,6 +44,7 @@ ui.onRun(async () => {
     const tokens = lexer.tokenize();
     const parser = new Parser(tokens);
     const ast = parser.parse();
+    console.log(ast);
 
     const result = executor.execute(ast);
 

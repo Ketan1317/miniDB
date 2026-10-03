@@ -12,8 +12,13 @@ export class Table {
       );
     }
 
-    this.validateRow(row);
-    this.rows.push(row);
+    const finalRow = [...row];
+
+    this.applyDefaults(finalRow);
+    this.validateRow(finalRow);
+    this.validateConstraints(finalRow);
+
+    this.rows.push(finalRow);
   }
 
   validateRow(row) {
@@ -24,6 +29,18 @@ export class Table {
       if (!this.isValidType(value, column.type)) {
         throw new Error(
           `Invalid value for column '${column.name}'. Expected ${column.type}`,
+        );
+      }
+    }
+  }
+  validateConstraints(row) {
+    for (let i = 0; i < this.schema.length; i++) {
+      const column = this.schema[i];
+      const value = row[i];
+
+      if (column.notNull && value === null) {
+        throw new Error(
+          `Column '${column.name}' cannot be NULL`,
         );
       }
     }
@@ -46,6 +63,16 @@ export class Table {
 
       default:
         return false;
+    }
+  }
+
+  applyDefaults(row){
+    for(let i=0;i<this.schema.length;i++){
+      const col = this.schema[i];
+
+      if(row[i] === null && col.defaultValue !== null){
+        row[i] = col.defaultValue;
+      }
     }
   }
 

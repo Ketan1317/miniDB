@@ -61,7 +61,42 @@ export class Parser {
       const name = this.expect("IDENTIFIER").value;
       const type = this.expect("KEYWORD").value;
 
-      columns.push({ name, type });
+      const column = {
+        name,
+        type,
+        primaryKey: false,
+        unique: false,
+        notNull: false,
+        defaultValue: null,
+      };
+
+      while (this.currToken().value !== "," && this.currToken().value !== ")") {
+        if (this.currToken().value === "PRIMARY") {
+          this.moveAhead();
+          this.expect("KEYWORD", "KEY");
+
+          column.primaryKey = true;
+          column.unique = true;
+          column.notNull = true;
+        } else if (this.currToken().value === "UNIQUE") {
+          this.moveAhead();
+
+          column.unique = true;
+        } else if (this.currToken().value === "NOT") {
+          this.moveAhead();
+          this.expect("KEYWORD", "NULL");
+
+          column.notNull = true;
+        } else if (this.currToken().value === "DEFAULT") {
+          this.moveAhead();
+
+          column.defaultValue = this.parseValue();
+        } else {
+          throw new Error(`Unexpected constraint: ${this.currToken().value}`);
+        }
+      }
+
+      columns.push(column);
       if (this.currToken().value === ",") {
         this.moveAhead();
       }
@@ -248,6 +283,11 @@ export class Parser {
     if (token.value === "FALSE") {
       this.moveAhead();
       return false;
+    }
+
+    if (token.value === "NULL") {
+      this.moveAhead();
+      return null;
     }
 
     throw new Error(`Invalid value: ${token.value}`);
