@@ -159,20 +159,17 @@ export class Parser {
   parseSelect() {
     this.expect("KEYWORD", "SELECT");
 
-    const columns = [];
-    if (this.currToken().value === "*") {
-      columns.push("*");
-      this.moveAhead();
-    } else {
-      while (true) {
-        columns.push(this.expect("IDENTIFIER").value);
-        if (this.currToken().value !== ",") {
-          break;
-        }
-        this.moveAhead();
+    const cols = [];
+
+    while (true) {
+      cols.push(this.parseSelectCols());
+      if (this.currToken().value !== ",") {
+        break;
       }
+      this.moveAhead();
     }
 
+    console.log(this.currToken());
     this.expect("KEYWORD", "FROM");
     const tableName = this.expect("IDENTIFIER").value;
 
@@ -195,7 +192,38 @@ export class Parser {
       this.moveAhead();
     }
 
-    return { type: "SELECT", tableName, columns, where, orderBy, limit };
+    return { type: "SELECT", tableName, columns : cols, where, orderBy, limit };
+  }
+
+  parseSelectCols() {
+    const aggFunc = ["COUNT", "SUM", "AVG", "MIN", "MAX"];
+
+    const token = this.currToken();
+    if (aggFunc.includes(token.value.toUpperCase())) {
+      const funcName = this.moveAhead().value.toUpperCase();
+      this.expect("SYMBOL", "(");
+
+      let col;
+      if (this.currToken().value === "*") {
+        col = "*";
+        this.moveAhead();
+      } else {
+        col = this.expect("IDENTIFIER").value;
+      }
+      this.expect("SYMBOL", ")");
+
+      return {
+        type: "AGGREGATE",
+        function: funcName,
+        column : col,
+      };
+    }
+    if (token.value === "*") {
+      this.moveAhead();
+      return "*";
+    }
+
+    return this.expect("IDENTIFIER").value;
   }
 
   parseUpdate() {

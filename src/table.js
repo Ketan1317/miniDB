@@ -98,6 +98,10 @@ export class Table {
       rows = rows.slice(0, limit);
     }
 
+    if (this.hasAggrFunc(columns)) {
+      return this.executeAggregates(rows, columns);
+    }
+
     let selectedColumns;
 
     if (columns.includes("*")) {
@@ -128,6 +132,97 @@ export class Table {
       columns: selectedColumns.map((column) => column.name),
       rows: resultRows,
     };
+  }
+
+  hasAggrFunc(columns) {
+  if (!Array.isArray(columns)) {
+    return false;
+  }
+
+  return columns.some(
+    (column) =>
+      typeof column === "object" &&
+      column.type === "AGGREGATE"
+  );
+}
+
+  executeAggregates(rows, columns) {
+    console.log("Aggregate columns:", columns);
+    const resRow = [];
+    const resCols = [];
+
+    for (let col of columns) {
+      const funcName = col.function;
+      const colName = col.column;
+
+      let values;
+
+      if (colName === "*") {
+        values = rows;
+      } else {
+        const colIdx = this.schema.findIndex((col) => col.name === colName);
+
+        if (colIdx === -1) {
+          throw new Error(`Column '${colName}' does not exist`);
+        }
+
+        values = rows
+          .map((row) => row[colIdx])
+          .filter((value) => value !== null);
+      }
+
+      const result = this.calculateAggr(funcName, colName, values);
+      resCols.push(`${funcName}(${colName})`);
+
+      resRow.push(result);
+    }
+    return {
+      columns: resCols,
+      rows: [resRow],
+    };
+  }
+
+  calculateAggr(functionName, columnName, values) {
+    switch (functionName) {
+      case "COUNT":
+        return values.length;
+
+      case "SUM":
+        this.validateNumVals(values, columnName);
+        return values.reduce((sum, value) => sum + value, 0);
+
+      case "AVG":
+        this.validateNumVals(values, columnName);
+        if (values.length === 0) {
+          return null;
+        }
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+
+      case "MIN":
+        if (values.length === 0) {
+          return null;
+        }
+        return Math.min(...values);
+
+      case "MAX":
+        if (values.length === 0) {
+          return null;
+        }
+        return Math.max(...values);
+
+      default:
+        throw new Error(`Unsupported aggregate function: ${functionName}`);
+    }
+  }
+
+  validateNumVals(values, columnName) {
+    for (const value of values) {
+      if (typeof value !== "number") {
+        throw new Error(
+          `Aggregate function requires a numeric column: '${columnName}'`,
+        );
+      }
+    }
   }
 
   filterRows(conditions) {
@@ -162,7 +257,7 @@ export class Table {
       if (conditions && !this.evaluateConditions(orgRow, conditions)) {
         continue;
       }
-      this.validateRow(updattable.insert(columns, values));
+      this.validateRow(updatedRow);
       this.validateConstraints(updatedRow);
     }
     this.validateAllUniqueConstraints(updatedRows);

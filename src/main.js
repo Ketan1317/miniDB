@@ -44,7 +44,6 @@ ui.onRun(async () => {
     const tokens = lexer.tokenize();
     const parser = new Parser(tokens);
     const ast = parser.parse();
-    console.log(ast);
 
     const result = executor.execute(ast);
 
@@ -75,7 +74,6 @@ ui.onRun(async () => {
     ui.showError(error.message);
   }
 
-  console.log(new Lexer("SELECT * FROM users ORDER BY age DESC;").tokenize());
 });
 
 initialize();

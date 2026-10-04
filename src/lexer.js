@@ -113,6 +113,11 @@ export class Lexer {
       "NOT",
       "NULL",
       "DEFAULT",
+      "COUNT",
+      "SUM",
+      "AVG",
+      "MIN",
+      "MAX",
     ];
 
     if (keywords.includes(value.toUpperCase())) {
