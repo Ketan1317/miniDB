@@ -46,6 +46,8 @@ export class Executor {
       ast.tableName,
       ast.columns,
       ast.where,
+      ast.groupBy,
+      ast.having,
       ast.orderBy,
       ast.limit,
     );

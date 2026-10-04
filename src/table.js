@@ -83,11 +83,29 @@ export class Table {
     return this.rows;
   }
 
-  select(columns, condition = null, orderBy = null, limit = null) {
+  select(
+    columns,
+    condition = null,
+    groupBy = null,
+    having = null,
+    orderBy = null,
+    limit = null,
+  ) {
     let rows = this.rows;
 
     if (condition) {
       rows = this.filterRows(condition);
+    }
+
+    if (groupBy) {
+      return this.execGroupByQuery(
+        rows,
+        columns,
+        groupBy,
+        having,
+        orderBy,
+        limit,
+      );
     }
 
     if (orderBy) {
@@ -134,17 +152,181 @@ export class Table {
     };
   }
 
-  hasAggrFunc(columns) {
-  if (!Array.isArray(columns)) {
-    return false;
+  execGroupByQuery(rows, columns, groupBy, having, orderBy, limit) {
+    // look up map
+    const columnIndexes = new Map(
+      this.schema.map((column, index) => [column.name, index]),
+    );
+
+    // get all the grouping cols
+    const groupIndexes = groupBy.map((colName) => {
+      const index = columnIndexes.get(colName);
+
+      if (index === undefined) {
+        throw new Error(`Column '${colName}' does not exist`);
+      }
+      return index;
+    });
+
+    // group all the rows
+    const groups = new Map();
+
+    for (const row of rows) {
+      const key = JSON.stringify(groupIndexes.map((index) => row[index]));
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key).push(row);
+    }
+
+    const selectInfo = columns.map((column) => {
+      if (typeof column === "string") {
+        const index = columnIndexes.get(column);
+
+        if (index === undefined) {
+          throw new Error(`Column '${column}' does not exist`);
+        }
+
+        return {
+          type: "COLUMN",
+          name: column,
+          index,
+        };
+      }
+
+      if (column.type === "AGGREGATE") {
+        let index = null;
+
+        if (column.column !== "*") {
+          index = columnIndexes.get(column.column);
+
+          if (index === undefined) {
+            throw new Error(`Column '${column.column}' does not exist`);
+          }
+        }
+
+        return {
+          type: "AGGREGATE",
+          function: column.function,
+          column: column.column,
+          index,
+        };
+      }
+
+      throw new Error("Invalid SELECT expression");
+    });
+
+    const resultRows = [];
+
+    // exec each group
+    for (const groupRows of groups.values()) {
+      const resultRow = [];
+
+      for (const column of selectInfo) {
+        // normal column
+        if (column.type === "COLUMN") {
+          resultRow.push(groupRows[0][column.index]);
+          continue;
+        }
+
+        // aggregate
+        let values;
+
+        if (column.column === "*") {
+          values = groupRows;
+        } else {
+          values = groupRows
+            .map((row) => row[column.index])
+            .filter((value) => value !== null);
+        }
+
+        resultRow.push(
+          this.calculateAggr(column.function, column.column, values),
+        );
+      }
+
+      resultRows.push(resultRow);
+    }
+
+    const resultColumns = selectInfo.map((column) => {
+      if (column.type === "COLUMN") {
+        return column.name;
+      }
+
+      return `${column.function}(${column.column})`;
+    });
+
+    if (having) {
+      const havingIndex = selectInfo.findIndex(
+        (column) =>
+          column.type === "AGGREGATE" &&
+          column.function === having.aggregate.function &&
+          column.column === having.aggregate.column,
+      );
+
+      if (havingIndex === -1) {
+        throw new Error("HAVING aggregate must appear in SELECT");
+      }
+
+      const filteredRows = resultRows.filter((row) =>
+        this.evaluateComparison(
+          row[havingIndex],
+          having.operator,
+          having.value,
+        ),
+      );
+
+      resultRows.splice(0, resultRows.length, ...filteredRows);
+    }
+
+    if (orderBy) {
+      const orderIndex = resultColumns.indexOf(orderBy.column);
+
+      if (orderIndex === -1) {
+        throw new Error(`Column '${orderBy.column}' does not exist in result`);
+      }
+
+      resultRows.sort((a, b) => {
+        const valueA = a[orderIndex];
+        const valueB = b[orderIndex];
+
+        if (valueA === valueB) {
+          return 0;
+        }
+
+        if (valueA == null) {
+          return 1;
+        }
+
+        if (valueB == null) {
+          return -1;
+        }
+
+        const result = valueA < valueB ? -1 : 1;
+
+        return orderBy.direction === "DESC" ? -result : result;
+      });
+    }
+
+    if (limit !== null) {
+      resultRows.splice(limit);
+    }
+
+    return {
+      columns: resultColumns,
+      rows: resultRows,
+    };
   }
 
-  return columns.some(
-    (column) =>
-      typeof column === "object" &&
-      column.type === "AGGREGATE"
-  );
-}
+  hasAggrFunc(columns) {
+    if (!Array.isArray(columns)) {
+      return false;
+    }
+
+    return columns.some(
+      (column) => typeof column === "object" && column.type === "AGGREGATE",
+    );
+  }
 
   executeAggregates(rows, columns) {
     console.log("Aggregate columns:", columns);
@@ -422,5 +604,29 @@ export class Table {
       return orderBy.direction === "ASC" ? 1 : -1;
     });
     return sortedRows;
+  }
+  evaluateComparison(left, operator, right) {
+    switch (operator) {
+      case "=":
+        return left === right;
+
+      case "!=":
+        return left !== right;
+
+      case ">":
+        return left > right;
+
+      case "<":
+        return left < right;
+
+      case ">=":
+        return left >= right;
+
+      case "<=":
+        return left <= right;
+
+      default:
+        throw new Error(`Unsupported operator: ${operator}`);
+    }
   }
 }

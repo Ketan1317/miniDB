@@ -169,9 +169,18 @@ export class Parser {
       this.moveAhead();
     }
 
-    console.log(this.currToken());
     this.expect("KEYWORD", "FROM");
     const tableName = this.expect("IDENTIFIER").value;
+
+    let groupBy = null;
+    if (this.currToken().value === "GROUP") {
+      groupBy = this.parseGroupBy();
+    }
+
+    let having = null;
+    if (this.currToken().value === "HAVING") {
+      having = this.parseHaving();
+    }
 
     let where = null;
     if (this.currToken().value === "WHERE") {
@@ -192,7 +201,46 @@ export class Parser {
       this.moveAhead();
     }
 
-    return { type: "SELECT", tableName, columns : cols, where, orderBy, limit };
+    return {
+      type: "SELECT",
+      tableName,
+      columns: cols,
+      where,
+      orderBy,
+      limit,
+      having,
+      groupBy,
+    };
+  }
+
+  parseGroupBy() {
+    this.expect("KEYWORD", "GROUP");
+    this.expect("KEYWORD", "BY");
+
+    const cols = [];
+    while (true) {
+      cols.push(this.expect("IDENTIFIER").value);
+
+      if (this.currToken().value !== ",") {
+        break;
+      }
+      this.moveAhead();
+    }
+
+    return cols;
+  }
+
+  parseHaving() {
+    this.expect("KEYWORD", "HAVING");
+    const aggregate = this.parseSelectCols();
+    const operator = this.expect("OPERATOR").value;
+    const value = this.parseValue();
+
+    return {
+      aggregate,
+      operator,
+      value,
+    };
   }
 
   parseSelectCols() {
@@ -215,7 +263,7 @@ export class Parser {
       return {
         type: "AGGREGATE",
         function: funcName,
-        column : col,
+        column: col,
       };
     }
     if (token.value === "*") {

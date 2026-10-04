@@ -118,6 +118,8 @@ export class Lexer {
       "AVG",
       "MIN",
       "MAX",
+      "GROUP",
+      "HAVING",
     ];
 
     if (keywords.includes(value.toUpperCase())) {

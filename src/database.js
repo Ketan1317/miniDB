@@ -37,9 +37,23 @@ export class Database {
     return table.selectAll();
   }
 
-  select(tableName, columns, condition = null, orderBy = null, limit = null) {
-    const table = this.getTable(tableName);
-    return table.select(columns, condition, orderBy, limit);
+  select(
+    tableName,
+    columns,
+    condition = null,
+    groupBy = null,
+    having = null,
+    orderBy = null,
+    limit = null,
+  ) {
+    return this.getTable(tableName).select(
+      columns,
+      condition,
+      groupBy,
+      having,
+      orderBy,
+      limit,
+    );
   }
 
   update(tableName, updates, conditions = null) {
