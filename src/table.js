@@ -18,32 +18,9 @@ export class Table {
     this.validateRow(finalRow);
     this.validateConstraints(finalRow);
 
+    this.validateAllUniqueConstraints([...this.rows, finalRow]);
+
     this.rows.push(finalRow);
-  }
-
-  validateRow(row) {
-    for (let i = 0; i < this.schema.length; i++) {
-      const column = this.schema[i];
-      const value = row[i];
-
-      if (!this.isValidType(value, column.type)) {
-        throw new Error(
-          `Invalid value for column '${column.name}'. Expected ${column.type}`,
-        );
-      }
-    }
-  }
-  validateConstraints(row) {
-    for (let i = 0; i < this.schema.length; i++) {
-      const column = this.schema[i];
-      const value = row[i];
-
-      if (column.notNull && value === null) {
-        throw new Error(
-          `Column '${column.name}' cannot be NULL`,
-        );
-      }
-    }
   }
 
   isValidType(value, type) {
@@ -66,11 +43,11 @@ export class Table {
     }
   }
 
-  applyDefaults(row){
-    for(let i=0;i<this.schema.length;i++){
+  applyDefaults(row) {
+    for (let i = 0; i < this.schema.length; i++) {
       const col = this.schema[i];
 
-      if(row[i] === null && col.defaultValue !== null){
+      if (row[i] === null && col.defaultValue !== null) {
         row[i] = col.defaultValue;
       }
     }
@@ -131,8 +108,113 @@ export class Table {
     return this.rows.filter((row) => this.evaluateConditions(row, conditions));
   }
 
+  update(updates, conditions = null) {
+    const updatedRows = this.rows.map((row) => [...row]);
+    for (let i = 0; i < updatedRows.length; i++) {
+      const row = updatedRows[i];
+      if (conditions && !this.evaluateConditions(row, conditions)) {
+        continue;
+      }
+
+      for (let update of updates) {
+        const colIdx = this.schema.findIndex(
+          (col) => col.name === update.column,
+        );
+        if (colIdx == -1) {
+          throw new Error(`Column ${update.column} does not exist`);
+        }
+
+        row[colIdx] = update.value;
+      }
+    }
+
+    // // Validate all modified rows BEFORE changing this.rows
+    for (let i = 0; i < updatedRows.length; i++) {
+      const orgRow = this.rows[i];
+      const updatedRow = updatedRows[i];
+
+      if (conditions && !this.evaluateConditions(orgRow, conditions)) {
+        continue;
+      }
+      this.validateRow(updatedRow);
+      this.validateConstraints(updatedRow);
+    }
+    this.validateAllUniqueConstraints(updatedRows);
+    let updateCnt = 0;
+
+    for (let i = 0; i < this.rows.length; i++) {
+      if (!conditions || this.evaluateConditions(this.rows[i], conditions)) {
+        this.rows[i] = updatedRows[i];
+        updateCnt++;
+      }
+    }
+
+    return updateCnt;
+  }
+
+  validateRow(row) {
+    for (let i = 0; i < this.schema.length; i++) {
+      const column = this.schema[i];
+      const value = row[i];
+
+      if (!this.isValidType(value, column.type)) {
+        throw new Error(
+          `Invalid value for column '${column.name}'. Expected ${column.type}`,
+        );
+      }
+    }
+  }
+  validateConstraints(row) {
+    for (let i = 0; i < this.schema.length; i++) {
+      const column = this.schema[i];
+      const value = row[i];
+
+      if (column.notNull && value === null) {
+        throw new Error(`Column '${column.name}' cannot be NULL`);
+      }
+    }
+  }
+
+  validateAllUniqueConstraints(rows) {
+    for (let i = 0; i < this.schema.length; i++) {
+      const col = this.schema[i];
+
+      if (!col.unique && !col.primaryKey) {
+        continue;
+      }
+
+      const seen = new Set();
+      for (let row of rows) {
+        let val = row[i];
+        if (val == null) {
+          continue;
+        }
+        if (seen.has(val)) {
+          throw new Error(`Duplicate value '${val}' for column '${col.name}'`);
+        }
+        seen.add(val);
+      }
+    }
+  }
+
+  delete(conditions = null) {
+    if (!conditions) {
+      const cnt = this.rows.length;
+      this.rows = [];
+      return cnt;
+    }
+
+    const orgLength = this.rows.length;
+
+    this.rows = this.rows.filter(
+      (row) => !this.evaluateConditions(row, conditions),
+    );
+
+    return orgLength - this.rows.length;
+  }
+
   evaluateCondition(row, condition) {
-    // returna a boolean
+    // return a boolean
     const colIdx = this.schema.findIndex(
       (column) => column.name === condition.column,
     );
@@ -165,51 +247,6 @@ export class Table {
       default:
         throw new Error(`Unsupported operator: ${condition.operator}`);
     }
-  }
-
-  update(updates, conditions = null) {
-    let updateCnt = 0;
-    for (let row of this.rows) {
-      if (conditions && !this.evaluateConditions(row, conditions)) {
-        continue;
-      }
-
-      for (let update of updates) {
-        const colIdx = this.schema.findIndex(
-          (col) => col.name === update.column,
-        );
-        if (colIdx == -1) {
-          throw new Error(`Column ${update.column} does not exist`);
-        }
-
-        const col = this.schema[colIdx];
-        if (!this.isValidType(update.value, col.type)) {
-          throw new Error(
-            `Invalid value for column '${col.name}'. Expected ${col.type}`,
-          );
-        }
-
-        row[colIdx] = update.value;
-      }
-      updateCnt++;
-    }
-    return updateCnt;
-  }
-
-  delete(conditions = null) {
-    if (!conditions) {
-      const cnt = this.rows.length;
-      this.rows = [];
-      return cnt;
-    }
-
-    const orgLength = this.rows.length;
-
-    this.rows = this.rows.filter(
-      (row) => !this.evaluateConditions(row, conditions),
-    );
-
-    return orgLength - this.rows.length;
   }
 
   evaluateConditions(row, conditions) {

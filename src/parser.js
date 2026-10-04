@@ -116,6 +116,24 @@ export class Parser {
 
     const tableName = this.expect("IDENTIFIER").value;
 
+    let cols = null;
+    // Optional col list
+    if (this.currToken().value === "(") {
+      this.moveAhead();
+
+      cols = [];
+
+      while (this.currToken().value !== ")") {
+        cols.push(this.expect("IDENTIFIER").value);
+
+        if (this.currToken().value === ",") {
+          this.moveAhead();
+        }
+      }
+
+      this.expect("SYMBOL", ")");
+    }
+
     this.expect("KEYWORD", "VALUES");
     this.expect("SYMBOL", "(");
 
@@ -135,7 +153,7 @@ export class Parser {
       this.moveAhead();
     }
 
-    return { type: "INSERT", tableName, values };
+    return { type: "INSERT", tableName, values, columns: cols };
   }
 
   parseSelect() {

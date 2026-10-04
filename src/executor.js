@@ -33,7 +33,7 @@ export class Executor {
   }
 
   executeInsert(ast) {
-    this.database.insert(ast.tableName, ast.values);
+    this.database.insert(ast.tableName, ast.columns, ast.values);
 
     return {
       type: "MESSAGE",
@@ -42,11 +42,21 @@ export class Executor {
   }
 
   executeSelect(ast) {
-    return this.database.select(ast.tableName, ast.columns, ast.where, ast.orderBy, ast.limit);
+    return this.database.select(
+      ast.tableName,
+      ast.columns,
+      ast.where,
+      ast.orderBy,
+      ast.limit,
+    );
   }
 
   executeUpdate(ast) {
-    const updatedCount = this.database.update(ast.tableName, ast.updates, ast.where);
+    const updatedCount = this.database.update(
+      ast.tableName,
+      ast.updates,
+      ast.where,
+    );
 
     return {
       type: "MESSAGE",

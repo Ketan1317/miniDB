@@ -27,9 +27,9 @@ export class Database {
     return table;
   }
 
-  insert(tableName, row) {
+  insert(tableName, columns, values) {
     const table = this.getTable(tableName);
-    table.insert(row);
+    table.insert(columns, values);
   }
 
   selectAll(tableName) {
@@ -42,12 +42,12 @@ export class Database {
     return table.select(columns, condition, orderBy, limit);
   }
 
-  update(tableName, updates, conditions = null){
-    const table = this.getTable(tableName)
-    return table.update(updates,conditions);
+  update(tableName, updates, conditions = null) {
+    const table = this.getTable(tableName);
+    return table.update(updates, conditions);
   }
 
-  delete(tableName,conditions = null){
+  delete(tableName, conditions = null) {
     const table = this.getTable(tableName);
     return table.delete(conditions);
   }
