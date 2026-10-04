@@ -68,7 +68,8 @@ export class UI {
         for (const row of result.rows) {
             const tr = document.createElement("tr");
 
-            tr.className =  "border-b border-zinc-900 hover:bg-zinc-900/40 transition";
+            tr.className =
+                "border-b border-zinc-900 hover:bg-zinc-900/40 transition";
 
             for (const value of row) {
                 const td = document.createElement("td");
