@@ -5,14 +5,40 @@ export class Table {
     this.rows = [];
   }
 
-  insert(row) {
-    if (row.length !== this.schema.length) {
-      throw new Error(
-        `Expected ${this.schema.length} values, got ${row.length}`,
-      );
-    }
+  insert(columns, values) {
+    let finalRow;
+    // Normal way
+    if (columns == null) {
+      if (values.length !== this.schema.length) {
+        throw new Error(
+          `Expected ${this.schema.length} values, got ${values.length}`,
+        );
+      }
 
-    const finalRow = [...row];
+      finalRow = [...values];
+    }
+    // with specified columns
+    else {
+      if (columns.length !== values.length) {
+        throw new Error(
+          `Expected ${columns.length} values, got ${values.length}`,
+        );
+      }
+
+      finalRow = new Array(this.schema.length).fill(null);
+
+      for (let i = 0; i < columns.length; i++) {
+        const colIdx = this.schema.findIndex(
+          (column) => column.name === columns[i],
+        );
+
+        if (colIdx === -1) {
+          throw new Error(`Column '${columns[i]}' does not exist`);
+        }
+
+        finalRow[colIdx] = values[i];
+      }
+    }
 
     this.applyDefaults(finalRow);
     this.validateRow(finalRow);
@@ -136,7 +162,7 @@ export class Table {
       if (conditions && !this.evaluateConditions(orgRow, conditions)) {
         continue;
       }
-      this.validateRow(updatedRow);
+      this.validateRow(updattable.insert(columns, values));
       this.validateConstraints(updatedRow);
     }
     this.validateAllUniqueConstraints(updatedRows);
