@@ -66,6 +66,13 @@ export class Database {
     return table.delete(conditions);
   }
 
+  dropTable(tableName) {
+    if (!this.tables.has(tableName)) {
+      throw new Error(`Table '${tableName}' does not exist`);
+    }
+    this.tables.delete(tableName);
+  }
+
   serialize() {
     return {
       tables: Array.from(this.tables.values()).map((table) => ({

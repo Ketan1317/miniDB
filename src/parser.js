@@ -18,6 +18,8 @@ export class Parser {
         return this.parseUpdate();
       case "DELETE":
         return this.parseDelete();
+      case "DROP":
+        return this.parseDrop();
 
       default:
         throw new Error(`Unexpected token: ${token.value}`);
@@ -58,45 +60,7 @@ export class Parser {
     const columns = [];
 
     while (this.currToken().value !== ")") {
-      const name = this.expect("IDENTIFIER").value;
-      const type = this.expect("KEYWORD").value;
-
-      const column = {
-        name,
-        type,
-        primaryKey: false,
-        unique: false,
-        notNull: false,
-        defaultValue: null,
-      };
-
-      while (this.currToken().value !== "," && this.currToken().value !== ")") {
-        if (this.currToken().value === "PRIMARY") {
-          this.moveAhead();
-          this.expect("KEYWORD", "KEY");
-
-          column.primaryKey = true;
-          column.unique = true;
-          column.notNull = true;
-        } else if (this.currToken().value === "UNIQUE") {
-          this.moveAhead();
-
-          column.unique = true;
-        } else if (this.currToken().value === "NOT") {
-          this.moveAhead();
-          this.expect("KEYWORD", "NULL");
-
-          column.notNull = true;
-        } else if (this.currToken().value === "DEFAULT") {
-          this.moveAhead();
-
-          column.defaultValue = this.parseValue();
-        } else {
-          throw new Error(`Unexpected constraint: ${this.currToken().value}`);
-        }
-      }
-
-      columns.push(column);
+      columns.push(this.parseColDefinition());
       if (this.currToken().value === ",") {
         this.moveAhead();
       }
@@ -108,6 +72,72 @@ export class Parser {
     }
 
     return { type: "CREATE_TABLE", tableName, columns };
+  }
+
+  parseColDefinition() {
+    const name = this.expect("IDENTIFIER").value;
+
+    const { type, length } = this.parseColType();
+
+    const column = {
+      name,
+      type,
+      length,
+      primaryKey: false,
+      unique: false,
+      notNull: false,
+      defaultValue: null,
+    };
+
+    while (this.currToken().value !== "," && this.currToken().value !== ")") {
+      const constraint = this.currToken().value;
+
+      if (constraint === "PRIMARY") {
+        this.moveAhead();
+        this.expect("KEYWORD", "KEY");
+
+        column.primaryKey = true;
+        column.unique = true;
+        column.notNull = true;
+      } else if (constraint === "UNIQUE") {
+        this.moveAhead();
+
+        column.unique = true;
+      } else if (constraint === "NOT") {
+        this.moveAhead();
+        this.expect("KEYWORD", "NULL");
+
+        column.notNull = true;
+      } else if (constraint === "DEFAULT") {
+        this.moveAhead();
+
+        column.defaultValue = this.parseValue();
+      } else {
+        throw new Error(`Unexpected constraint: ${constraint}`);
+      }
+    }
+
+    return column;
+  }
+
+  parseColType() {
+    const type = this.expect("KEYWORD").value;
+
+    if (type !== "CHAR" && type !== "VARCHAR") {
+      return {
+        type,
+        length: null,
+      };
+    }
+    this.expect("SYMBOL", "(");
+
+    const length = this.expect("NUMBER").value;
+    if (!Number.isInteger(length) || length <= 0) {
+      throw new Error(`${type} length must be a positive integer`);
+    }
+
+    this.expect("SYMBOL", ")");
+    return { type, length };
   }
 
   parseInsert() {
@@ -333,6 +363,15 @@ export class Parser {
       tableName,
       where,
     };
+  }
+
+  parseDrop() {
+    this.expect("KEYWORD", "DROP");
+    this.expect("KEYWORD", "TABLE");
+
+    const tableName = this.expect("IDENTIFIER").value;
+
+    return { type: "DROP_TABLE", tableName };
   }
 
   parseWhere() {

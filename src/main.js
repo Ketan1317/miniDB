@@ -69,7 +69,8 @@ async function runQuery() {
       ast.type === "CREATE_TABLE" ||
       ast.type === "INSERT" ||
       ast.type === "UPDATE" ||
-      ast.type === "DELETE"
+      ast.type === "DELETE" ||
+      ast.type === "DROP"
     ) {
       await storage.save(database.serialize());
     }

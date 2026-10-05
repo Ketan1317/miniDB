@@ -63,6 +63,11 @@ export class Table {
         return typeof value === "string";
       case "BOOLEAN":
         return typeof value === "boolean";
+      case "CHAR":
+        return typeof value === "string";
+
+      case "VARCHAR":
+        return typeof value === "string";
 
       default:
         return false;
@@ -464,6 +469,17 @@ export class Table {
         throw new Error(
           `Invalid value for column '${column.name}'. Expected ${column.type}`,
         );
+      }
+
+      if (
+        value !== null &&
+        (column.type === "CHAR" || column.type === "VARCHAR")
+      ) {
+        if (value.length > column.length) {
+          throw new Error(
+            `Value for column '${column.name}' exceeds ${column.type}(${column.length})`,
+          );
+        }
       }
     }
   }

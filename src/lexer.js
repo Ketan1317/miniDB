@@ -83,6 +83,7 @@ export class Lexer {
 
     const value = this.input.slice(start, this.index);
     const keywords = [
+      "DROP",
       "CREATE",
       "TABLE",
       "INSERT",
@@ -96,6 +97,8 @@ export class Lexer {
       "INT",
       "FLOAT",
       "TEXT",
+      "CHAR",
+      "VARCHAR",
       "BOOLEAN",
       "TRUE",
       "FALSE",
