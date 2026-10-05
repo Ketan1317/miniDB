@@ -25,9 +25,8 @@ export class Visualizer {
     this.showEmpty(this.currentContainer);
     this.showEmpty(this.historyContainer);
 
-    // The Performance panel starts hidden, so the charts have no width until
-    // it is shown. Re-render whenever a container's width actually changes.
     this.widths = new Map();
+    // ResizeObserver watches an element's size
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = Math.round(entry.contentRect.width);
@@ -73,7 +72,6 @@ export class Visualizer {
 
   createSvg(container) {
     container.innerHTML = "";
-
     const width = container.clientWidth || 500;
 
     const svg = d3

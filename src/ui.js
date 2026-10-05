@@ -38,6 +38,7 @@ export class UI {
         this.runButton.addEventListener("click", callback);
     }
 
+    // creates a table out of the object returned (cols + rows)
     showResults(result) {
         if (!result || !result.rows || result.rows.length === 0) {
             this.results.innerHTML = `
@@ -61,8 +62,7 @@ export class UI {
         }
 
         const wrapper = document.createElement("div");
-        wrapper.className =
-            "border border-zinc-800 rounded-xl overflow-hidden bg-black";
+        wrapper.className = "border border-zinc-800 rounded-xl overflow-hidden bg-black";
 
         const scroller = document.createElement("div");
         scroller.className = "overflow-auto";
@@ -97,16 +97,12 @@ export class UI {
             for (const value of row) {
                 const td = document.createElement("td");
                 const isNull = value === null || value === undefined;
-
                 td.className =
                     "px-4 py-3 font-mono text-xs whitespace-nowrap " +
                     (isNull ? "text-zinc-600 italic" : "text-zinc-100");
-
                 td.textContent = isNull ? "NULL" : value;
-
                 tr.appendChild(td);
             }
-
             tbody.appendChild(tr);
         }
 
@@ -159,6 +155,7 @@ export class UI {
         `;
     }
 
+    // updates status bar
     updateStats(time, rows) {
         this.executionTime.textContent =
             `Execution: ${time.toFixed(2)} ms`;
@@ -170,6 +167,8 @@ export class UI {
             "Scan: Sequential";
     }
 
+
+    // updates left side bar after reading DB
     renderTables(database) {
         this.tableList.innerHTML = "";
 

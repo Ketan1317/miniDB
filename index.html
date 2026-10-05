@@ -232,21 +232,24 @@
             <div
               class="mt-auto border-t border-zinc-800 px-5 py-4 text-xs text-zinc-500 leading-5"
             >
-              Data lives in memory only. Refreshing the page clears all tables.
+              Your changes are persisted locally and remain intact after a page
+              refresh...
             </div>
           </div>
         </aside>
 
         <!-- WORKSPACE -->
-        <section class="flex-1 min-w-0 flex flex-col p-4 gap-4">
+        <section class="flex-1 min-w-0 flex flex-col p-4 gap-0">
           <!-- SQL EDITOR -->
           <div
-            class="h-[320px] shrink-0 flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden transition focus-within:border-zinc-500"
+            id="query-panel"
+            class="h-[360px] shrink-0 flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden transition-[border-color,height] duration-150 focus-within:border-zinc-500"
           >
             <div
               class="h-14 shrink-0 border-b border-zinc-800 px-5 flex items-center gap-3"
             >
               <span class="text-sm font-semibold">SQL editor</span>
+
               <span class="hidden lg:inline text-xs text-zinc-500">
                 <kbd
                   class="font-mono text-[11px] border border-zinc-700 rounded px-1.5 py-0.5 text-zinc-300"
@@ -267,12 +270,14 @@
                 >
                   Copy
                 </button>
+
                 <button
                   id="clear-sql"
                   class="px-3 py-2 rounded-lg text-xs font-medium text-zinc-300 border border-zinc-800 hover:bg-zinc-900 hover:text-white transition"
                 >
                   Clear
                 </button>
+
                 <button
                   id="run-query"
                   class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-black text-sm font-semibold hover:bg-zinc-200 active:scale-[0.98] transition"
@@ -303,10 +308,23 @@
             </div>
           </div>
 
+          <!-- RESIZE HANDLE -->
+          <div
+            id="workspace-resizer"
+            class="group h-3 shrink-0 cursor-row-resize flex items-center justify-center select-none"
+            title="Drag to resize query panel"
+          >
+            <div
+              class="w-16 h-1 rounded-full bg-zinc-800 group-hover:bg-zinc-500 group-active:bg-zinc-400 transition-colors"
+            ></div>
+          </div>
+
           <!-- LOWER WORKSPACE -->
           <div
+            id="lower-workspace"
             class="flex-1 min-h-0 flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden"
           >
+            <!-- TABS -->
             <div
               class="h-12 shrink-0 border-b border-zinc-800 px-3 flex items-center"
             >
@@ -319,6 +337,7 @@
                 >
                   Results
                 </button>
+
                 <button
                   id="performance-tab"
                   class="px-3.5 py-1.5 rounded-md text-xs font-semibold text-zinc-600 hover:text-zinc-300 transition"
@@ -348,26 +367,35 @@
                     <path d="M3 10h18M9 4v16" />
                   </svg>
                 </div>
+
                 <h2 class="mt-4 text-base font-semibold">No results yet</h2>
+
                 <p class="mt-1 text-sm text-zinc-500">
                   Write a query above and press Run query to see rows here.
                 </p>
 
                 <ol class="mt-6 grid sm:grid-cols-3 gap-3 text-left">
                   <li class="rounded-xl border border-zinc-800 p-4">
-                    <span class="text-sm font-medium">1. Create a table</span>
+                    <span class="text-sm font-medium"> 1. Create a table </span>
+
                     <p class="text-xs text-zinc-500 mt-1 leading-5">
                       Run the CREATE TABLE statement already in the editor.
                     </p>
                   </li>
+
                   <li class="rounded-xl border border-zinc-800 p-4">
-                    <span class="text-sm font-medium">2. Add some rows</span>
+                    <span class="text-sm font-medium"> 2. Add some rows </span>
+
                     <p class="text-xs text-zinc-500 mt-1 leading-5">
                       Use INSERT to fill the table with a few records.
                     </p>
                   </li>
+
                   <li class="rounded-xl border border-zinc-800 p-4">
-                    <span class="text-sm font-medium">3. Query your data</span>
+                    <span class="text-sm font-medium">
+                      3. Query your data
+                    </span>
+
                     <p class="text-xs text-zinc-500 mt-1 leading-5">
                       Use SELECT and check the Performance tab for timing.
                     </p>
@@ -381,38 +409,32 @@
               id="performance-panel"
               class="hidden flex-1 min-h-0 overflow-auto p-4"
             >
-              <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <!-- CURRENT EXECUTION -->
                 <div class="border border-zinc-800 rounded-xl bg-black p-4">
-                  <div class="mb-2">
+                  <div class="mb-3">
                     <h3 class="text-sm font-semibold">Current execution</h3>
+
                     <p class="text-xs text-zinc-500 mt-1">
                       Execution time for the latest query
                     </p>
                   </div>
-                  <div id="execution-chart" class="w-full h-[180px]"></div>
+
+                  <div id="execution-chart" class="w-full h-[300px]"></div>
                 </div>
 
+                <!-- QUERY HISTORY -->
                 <div class="border border-zinc-800 rounded-xl bg-black p-4">
-                  <div class="mb-2">
+                  <div class="mb-3">
                     <h3 class="text-sm font-semibold">Query history</h3>
+
                     <p class="text-xs text-zinc-500 mt-1">
                       Execution time across recent queries
                     </p>
                   </div>
-                  <div id="history-chart" class="w-full h-[180px]"></div>
-                </div>
-              </div>
 
-              <div
-                class="mt-[67px] border border-zinc-800 rounded-xl p-4 text-sm"
-              >
-                <h3 class="font-semibold">Reading these charts</h3>
-                <p class="text-zinc-500 mt-2 leading-6 max-w-3xl">
-                  Shorter bars mean faster queries. A sequential scan checks
-                  every row in a table, so queries on larger tables will take
-                  longer. Run the same query a few times to see how timing
-                  varies.
-                </p>
+                  <div id="history-chart" class="w-full h-[300px]"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -476,30 +498,28 @@
         clearQuery();
       });
 
-      document
-        .getElementById("copy-sql")
-        .addEventListener("click", async (e) => {
-          try {
-            await navigator.clipboard.writeText(getQuery());
+      const copyButton = document.getElementById("copy-sql");
 
-            const button = e.currentTarget;
-            const originalText = button.textContent;
+      copyButton.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(getQuery());
+          const originalText = copyButton.textContent;
+          copyButton.textContent = "Copied";
 
-            button.textContent = "Copied";
-
-            setTimeout(() => {
-              button.textContent = originalText;
-            }, 1200);
-          } catch (error) {
-            console.error("Copy failed:", error);
-          }
-        });
+          setTimeout(() => {
+            copyButton.textContent = originalText;
+          }, 1200);
+        } catch (error) {
+          console.error("Copy failed:", error);
+        }
+      });
 
       // Sidebar toggle
       const sidebar = document.getElementById("sidebar");
       const toggle = document.getElementById("sidebar-toggle");
 
       toggle.addEventListener("click", () => {
+        // return true if width is 0
         const collapsed = sidebar.classList.toggle("w-0");
 
         sidebar.classList.toggle("w-80", !collapsed);
@@ -511,6 +531,57 @@
 
       document.getElementById("shortcuts-btn").addEventListener("click", () => {
         document.getElementById("shortcuts-dialog").showModal();
+      });
+    </script>
+
+    <script type="module">
+      // This is for resizer
+      const queryPanel = document.getElementById("query-panel");
+      const resizer = document.getElementById("workspace-resizer");
+
+      let isResizing = false;
+      let startY = 0;
+      let startHeight = 0;
+
+      resizer.addEventListener("pointerdown", (event) => {
+        isResizing = true;
+
+        startY = event.clientY; // gives the pointer's vertical position relative to the browser viewport
+        startHeight = queryPanel.getBoundingClientRect().height; //gives the actual rendered dimensions of an element
+
+        resizer.setPointerCapture(event.pointerId); // Pointer leaves resizer, +Resizer still receives pointermove
+
+        document.body.style.cursor = "row-resize";
+        document.body.style.userSelect = "none";
+      });
+
+      resizer.addEventListener("pointermove", (event) => {
+        if (!isResizing) return;
+
+        const delta = event.clientY - startY;
+        const minHeight = 220;
+        const maxHeight = window.innerHeight - 250;
+
+        const newHeight = Math.min(
+          Math.max(startHeight + delta, minHeight),
+          maxHeight,
+        );
+
+        queryPanel.style.height = `${newHeight}px`;
+      });
+
+      resizer.addEventListener("pointerup", () => {
+        isResizing = false;
+
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      });
+
+      resizer.addEventListener("pointercancel", () => {
+        isResizing = false;
+
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
       });
     </script>
   </body>

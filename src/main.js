@@ -15,22 +15,15 @@ const storage = new Storage();
 
 let editorReady = false;
 
-function initializeEditor() {
-  const editorContainer = document.querySelector("#sql-editor");
-
-  if (!editorContainer) {
-    throw new Error("SQL editor container not found");
-  }
-
-  createEditor(editorContainer);
-
+function setEditor() {
+  const editorDiv = document.querySelector("#sql-editor");
+  createEditor(editorDiv);
   editorReady = true;
 }
 
 async function initialize() {
   try {
     await storage.open();
-
     const savedData = await storage.load();
 
     if (savedData) {
@@ -39,14 +32,13 @@ async function initialize() {
 
     ui.renderTables(database);
 
-    // Monaco is loaded separately in index.html
+    // monaco is loaded separately in index.html
     if (window.monacoReady) {
-      initializeEditor();
+      setEditor();
     } else {
-      window.addEventListener("monaco-ready", initializeEditor, { once: true });
+      window.addEventListener("monaco-ready", setEditor, { once: true });
     }
   } catch (error) {
-    console.error("MiniDB startup error:", error);
     ui.showError("Failed to load database: " + error.message);
   }
 }
@@ -58,7 +50,6 @@ async function runQuery() {
   }
 
   const query = getQuery().trim();
-
   if (!query) {
     ui.showMessage("Enter a SQL query.");
     return;
@@ -69,7 +60,6 @@ async function runQuery() {
   try {
     const lexer = new Lexer(query);
     const tokens = lexer.tokenize();
-
     const parser = new Parser(tokens);
     const ast = parser.parse();
 

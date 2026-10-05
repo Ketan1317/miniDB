@@ -95,21 +95,14 @@ export function createEditor(container) {
       bottom: 16,
     },
 
-    // UI feel
     roundedSelection: false,
     cursorBlinking: "smooth",
     cursorSmoothCaretAnimation: "on",
-
-    // Remove unnecessary editor UI
     folding: true,
     glyphMargin: false,
     overviewRulerLanes: 0,
-
-    // Better SQL editing
     tabSize: 2,
     insertSpaces: true,
-
-    // Disable minimap-related horizontal space
     scrollbar: {
       verticalScrollbarSize: 8,
       horizontalScrollbarSize: 8,
