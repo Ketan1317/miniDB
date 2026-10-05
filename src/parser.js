@@ -202,27 +202,32 @@ export class Parser {
     this.expect("KEYWORD", "FROM");
     const tableName = this.expect("IDENTIFIER").value;
 
+    let where = null;
+
+    if (this.currToken().value === "WHERE") {
+      where = this.parseWhere();
+    }
+
     let groupBy = null;
+
     if (this.currToken().value === "GROUP") {
       groupBy = this.parseGroupBy();
     }
 
     let having = null;
+
     if (this.currToken().value === "HAVING") {
       having = this.parseHaving();
     }
 
-    let where = null;
-    if (this.currToken().value === "WHERE") {
-      where = this.parseWhere();
-    }
-
     let orderBy = null;
+
     if (this.currToken().value === "ORDER") {
       orderBy = this.parseOrderBy();
     }
 
     let limit = null;
+
     if (this.currToken().value === "LIMIT") {
       limit = this.parseLimit();
     }
@@ -370,6 +375,9 @@ export class Parser {
     this.expect("KEYWORD", "TABLE");
 
     const tableName = this.expect("IDENTIFIER").value;
+    if (this.currToken().value === ";") {
+      this.moveAhead();
+    }
 
     return { type: "DROP_TABLE", tableName };
   }
