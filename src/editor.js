@@ -109,6 +109,13 @@ export function createEditor(container) {
     },
   });
 
+  editor.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+    () => {
+      window.dispatchEvent(new CustomEvent("run-query"));
+    }
+  );
+
   return editor;
 }
 

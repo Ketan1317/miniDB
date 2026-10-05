@@ -96,5 +96,6 @@ async function runQuery() {
 }
 
 ui.onRun(runQuery);
+window.addEventListener("run-query", runQuery);
 
 initialize();
