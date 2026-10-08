@@ -157,7 +157,6 @@
 
       <!-- MAIN -->
       <main class="flex flex-1 min-h-0">
-        <!-- EXPLORER -->
         <aside
           id="sidebar"
           class="w-80 shrink-0 border-r border-zinc-800 overflow-hidden hidden md:block transition-[width] duration-300 ease-out"
@@ -184,51 +183,6 @@
               </div>
             </div>
 
-            <div class="border-t border-zinc-800 px-5 py-4">
-              <h2 class="text-sm font-semibold">Quick snippets</h2>
-              <p class="text-xs text-zinc-500 mt-1 mb-3">
-                Click one to load it into the editor.
-              </p>
-              <div class="space-y-2">
-                <button
-                  data-sql="CREATE TABLE users (\n    id INT,\n    name TEXT,\n    age INT\n);"
-                  class="snippet w-full text-left rounded-lg border border-zinc-800 px-3 py-2.5 hover:bg-zinc-900 transition"
-                >
-                  <span class="block text-sm font-medium">Create a table</span>
-                  <span class="block text-xs text-zinc-500 mt-0.5"
-                    >Define columns and types</span
-                  >
-                </button>
-                <button
-                  data-sql="INSERT INTO users VALUES (1, 'Asha', 28);"
-                  class="snippet w-full text-left rounded-lg border border-zinc-800 px-3 py-2.5 hover:bg-zinc-900 transition"
-                >
-                  <span class="block text-sm font-medium">Insert a row</span>
-                  <span class="block text-xs text-zinc-500 mt-0.5"
-                    >Add data to a table</span
-                  >
-                </button>
-                <button
-                  data-sql="SELECT * FROM users;"
-                  class="snippet w-full text-left rounded-lg border border-zinc-800 px-3 py-2.5 hover:bg-zinc-900 transition"
-                >
-                  <span class="block text-sm font-medium">Select all rows</span>
-                  <span class="block text-xs text-zinc-500 mt-0.5"
-                    >Read everything in a table</span
-                  >
-                </button>
-                <button
-                  data-sql="SELECT name, age FROM users WHERE age > 25;"
-                  class="snippet w-full text-left rounded-lg border border-zinc-800 px-3 py-2.5 hover:bg-zinc-900 transition"
-                >
-                  <span class="block text-sm font-medium">Filter rows</span>
-                  <span class="block text-xs text-zinc-500 mt-0.5"
-                    >Pick columns with a condition</span
-                  >
-                </button>
-              </div>
-            </div>
-
             <div
               class="mt-auto border-t border-zinc-800 px-5 py-4 text-xs text-zinc-500 leading-5"
             >
@@ -237,6 +191,16 @@
             </div>
           </div>
         </aside>
+
+        <div
+          id="sidebar-resizer"
+          class="hidden md:flex w-1 shrink-0 cursor-col-resize items-center justify-center group select-none"
+          title="Drag to resize sidebar"
+        >
+          <div
+            class="w-px h-12 rounded-full bg-zinc-800 group-hover:bg-zinc-500 group-active:bg-zinc-400 transition-colors"
+          ></div>
+        </div>
 
         <!-- WORKSPACE -->
         <section class="flex-1 min-w-0 flex flex-col p-4 gap-0">
@@ -308,7 +272,6 @@
             </div>
           </div>
 
-          <!-- RESIZE HANDLE -->
           <div
             id="workspace-resizer"
             class="group h-3 shrink-0 cursor-row-resize flex items-center justify-center select-none"
@@ -485,14 +448,64 @@
 
     <script type="module" src="./src/main.js"></script>
 
-    <script type="module">
-      import { getQuery, setQuery, clearQuery } from "./src/editor.js";
-      document.querySelectorAll(".snippet").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const sql = btn.dataset.sql.replace(/\\n/g, "\n");
-          setQuery(sql);
-        });
+    <script>
+      // resizer for sidebar
+      const sidebar = document.getElementById("sidebar");
+      const sidebarResizer = document.getElementById("sidebar-resizer");
+      const sidebarContent = sidebar?.firstElementChild;
+
+      let isSidebarResizing = false;
+      let sidebarStartX = 0;
+      let sidebarStartWidth = 0;
+
+      sidebarResizer?.addEventListener("pointerdown", (event) => {
+        if (sidebar.classList.contains("w-0")) return;
+
+        isSidebarResizing = true;
+        sidebarStartX = event.clientX;
+        sidebarStartWidth = sidebar.getBoundingClientRect().width;
+
+        sidebarResizer.setPointerCapture(event.pointerId);
+
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
       });
+
+      sidebarResizer?.addEventListener("pointermove", (event) => {
+        if (!isSidebarResizing) return;
+
+        const delta = event.clientX - sidebarStartX;
+
+        const minWidth = 200;
+        const maxWidth = 530;
+
+        const newWidth = Math.min(
+          Math.max(sidebarStartWidth + delta, minWidth),
+          maxWidth,
+        );
+
+        sidebarWidth = newWidth;
+
+        sidebar.style.width = `${newWidth}px`;
+
+        if (sidebarContent) {
+          sidebarContent.style.width = `${newWidth}px`;
+        }
+      });
+
+      function stopSidebarResize() {
+        isSidebarResizing = false;
+
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+
+      sidebarResizer?.addEventListener("pointerup", stopSidebarResize);
+      sidebarResizer?.addEventListener("pointercancel", stopSidebarResize);
+    </script>
+
+    <script type="module">
+      import { getQuery, clearQuery } from "./src/editor.js";
 
       document.getElementById("clear-sql").addEventListener("click", () => {
         clearQuery();
@@ -503,6 +516,7 @@
       copyButton.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(getQuery());
+
           const originalText = copyButton.textContent;
           copyButton.textContent = "Copied";
 
@@ -514,23 +528,33 @@
         }
       });
 
-      // Sidebar toggle
-      const sidebar = document.getElementById("sidebar");
-      const toggle = document.getElementById("sidebar-toggle");
-
-      toggle.addEventListener("click", () => {
-        // return true if width is 0
-        const collapsed = sidebar.classList.toggle("w-0");
-
-        sidebar.classList.toggle("w-80", !collapsed);
-        sidebar.classList.toggle("border-r-0", collapsed);
-
-        toggle.setAttribute("aria-expanded", String(!collapsed));
-        toggle.title = collapsed ? "Show sidebar" : "Hide sidebar";
-      });
-
       document.getElementById("shortcuts-btn").addEventListener("click", () => {
         document.getElementById("shortcuts-dialog").showModal();
+      });
+
+      // Sidebar toggle
+      const sidebar = document.getElementById("sidebar");
+      const sidebarContent = sidebar.firstElementChild;
+      const toggle = document.getElementById("sidebar-toggle");
+
+      let sidebarCollapsed = false;
+      let sidebarWidth = 320;
+
+      toggle.addEventListener("click", () => {
+        sidebarCollapsed = !sidebarCollapsed;
+
+        if (sidebarCollapsed) {
+          sidebar.style.width = "0px";
+          sidebar.classList.add("border-r-0");
+        } else {
+          sidebar.style.width = `${sidebarWidth}px`;
+          sidebarContent.style.width = `${sidebarWidth}px`;
+          sidebar.classList.remove("border-r-0");
+        }
+
+        toggle.setAttribute("aria-expanded", String(!sidebarCollapsed));
+
+        toggle.title = sidebarCollapsed ? "Show sidebar" : "Hide sidebar";
       });
     </script>
 
