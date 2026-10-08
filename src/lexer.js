@@ -116,6 +116,7 @@ export class Lexer {
       "NOT",
       "NULL",
       "DEFAULT",
+      "DESC",
       "COUNT",
       "SUM",
       "AVG",

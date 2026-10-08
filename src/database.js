@@ -96,4 +96,21 @@ export class Database {
       this.tables.set(table.name, table);
     }
   }
+
+  describeTable(tableName) {
+    const table = this.getTable(tableName);
+
+    return {
+      columns: ["Field", "Type", "Length", "Null", "Key", "Default"],
+
+      rows: table.schema.map((col) => [
+        col.name,
+        col.type,
+        col.length ?? null,
+        col.notNull ? "NO" : "YES",
+        col.primaryKey ? "PRI" : col.unique ? "UNI" : null,
+        col.defaultValue,
+      ]),
+    };
+  }
 }

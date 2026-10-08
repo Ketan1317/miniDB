@@ -20,6 +20,8 @@ export class Parser {
         return this.parseDelete();
       case "DROP":
         return this.parseDrop();
+      case "DESC":
+        return this.parseDesc();
 
       default:
         throw new Error(`Unexpected token: ${token.value}`);
@@ -380,6 +382,20 @@ export class Parser {
     }
 
     return { type: "DROP_TABLE", tableName };
+  }
+
+  parseDesc() {
+    this.moveAhead();
+    const tableName = this.expect("IDENTIFIER").value;
+
+    if (this.currToken().value === ";") {
+      this.moveAhead();
+    }
+
+    return {
+      type: "DESC",
+      tableName,
+    };
   }
 
   parseWhere() {

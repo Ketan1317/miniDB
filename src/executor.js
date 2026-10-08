@@ -19,6 +19,8 @@ export class Executor {
         return this.executeDelete(ast);
       case "DROP_TABLE":
         return this.executeDrop(ast);
+      case "DESC":
+        return this.executeDesc(ast);
 
       default:
         throw new Error(`Unsupported AST type: ${ast.type}`);
@@ -83,5 +85,9 @@ export class Executor {
     return {
       message: `Table '${ast.tableName}' dropped successfully`,
     };
+  }
+
+  executeDesc(ast) {
+    return this.database.describeTable(ast.tableName);
   }
 }
