@@ -1,5 +1,6 @@
 import { Database } from "./database.js";
 import { Lexer } from "./lexer.js";
+import { Exporter } from "./exporter.js";
 import { Parser } from "./parser.js";
 import { Executor } from "./executor.js";
 import { UI } from "./ui.js";
@@ -12,11 +13,12 @@ const executor = new Executor(database);
 const ui = new UI();
 const visualizer = new Visualizer();
 const storage = new Storage();
+const exporter = new Exporter();
 
 let editorReady = false;
 
 function setEditor() {
-  if(editorReady) return;
+  if (editorReady) return;
   const editorDiv = document.querySelector("#sql-editor");
   if (!editorDiv) {
     throw new Error("SQL editor container not found.");
@@ -74,7 +76,7 @@ async function runQuery() {
       ast.type === "INSERT" ||
       ast.type === "UPDATE" ||
       ast.type === "DELETE" ||
-      ast.type === "DROP"
+      ast.type === "DROP_TABLE"
     ) {
       await storage.save(database.serialize());
     }
@@ -101,4 +103,14 @@ async function runQuery() {
 
 ui.onRun(runQuery);
 window.addEventListener("run-query", runQuery);
+
+const exportButton = document.getElementById("export-db");
+exportButton.addEventListener("click", () => {
+  try {
+    exporter.exportDatabase(database);
+  } catch (error) {
+    ui.showError(`Export failed: ${error.message}`);
+  }
+});
+
 initialize();
