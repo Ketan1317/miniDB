@@ -105,12 +105,16 @@ ui.onRun(runQuery);
 window.addEventListener("run-query", runQuery);
 
 const exportButton = document.getElementById("export-db");
-exportButton.addEventListener("click", () => {
-  try {
-    exporter.exportDatabase(database);
-  } catch (error) {
-    ui.showError(`Export failed: ${error.message}`);
-  }
-});
+
+if (exportButton) {
+  exportButton.addEventListener("click", () => {
+    try {
+      exporter.exportDatabase(database);
+    } catch (error) {
+      console.error("Export failed:", error);
+      ui.showError(`Export failed: ${error.message}`);
+    }
+  });
+}
 
 initialize();
